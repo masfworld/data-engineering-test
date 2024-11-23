@@ -1,0 +1,25 @@
+[tool.poetry]
+name = "data-engineering-test"
+version = "0.1.0"
+description = "IFCO Data Challenge"
+authors = ["Miguel Sotomayor <miguel.sotomayorf@gmail.com>"]
+readme = "README.md"
+packages = [
+    { include = "challenge" },
+    { include = "tests" },
+    { include = "helpers" },
+]
+
+[tool.poetry.dependencies]
+python = "^3.11"
+pandas = "^2.2.3"
+pyspark = "^3.5.3"
+fuzzywuzzy = "^0.18.0"
+
+[tool.poetry.group.dev.dependencies]
+pytest = "^8.3.3"
+coverage = "^7.6.7"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
