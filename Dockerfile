@@ -36,4 +36,3 @@ EXPOSE 4040
 
 # Command to run the application
 CMD ["poetry", "run", "python", "main.py"]
-# CMD ["sleep", "1000000"]

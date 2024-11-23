@@ -106,6 +106,7 @@ It's risky, because sometimes we can make mistakes using Jaro–Winkler, joining
 ## **Requirements**
 
 - Python 3.11
+- Java 11|17. Required by PySpark. You'll need more [requirements](https://medium.com/codex/pyspark-setup-on-windows-and-run-your-first-pyspark-program-7ce7c2833338) if using Windows. The recommendation is using [Docker](#3-execute-challenges-using-docker)
 - [Poetry](https://python-poetry.org/) for dependency management. Look at [this section](#1-install-dependencies-locally) to install poetry locally.
 - Docker (optional, for containerized execution)
 
