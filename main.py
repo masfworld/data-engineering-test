@@ -22,7 +22,7 @@ if __name__ == "__main__":
 
     try:
         # Load and clean data
-        orders_df = clean_column(load_orders(spark, orders_file), "company_name")
+        orders_df = load_orders(spark, orders_file)
         invoicing_df = load_invoicing_data(spark, invoicing_file)
 
         # Main menu loop
