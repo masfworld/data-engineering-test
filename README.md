@@ -24,10 +24,10 @@
 
 ## **Analysis and Assumptions**
 
-Firs assumption: Exercises are name as tests (Test 1, Test 2,...) in the original `README.md`. I'm going to rename these exercises as `Challenges` to avoid a misunderstanding between exercises and unit tests.
+Firs assumption: Exercises are named as tests (Test 1, Test 2,...) in the original `README.md`. I'm going to rename these exercises as `Challenges` to avoid a misunderstanding between exercises and unit tests.
 
-The main challenge for this input is `orders.csv` file. This file has a data quality issue for both `company_id` and `company_name` columns.
-My first thought was to identify uniquely a company based on `company_id`. Fixing this is quite easy. Just materializing all differents `company_name` in just one per `company_id`. Something like this:
+The main challenge is `orders.csv` file. This file has a data quality issue for both `company_id` and `company_name` columns.
+My first thought was to identify uniquely a company based on `company_id`. That was pretty easy, just materializing all differents `company_name` in just one per `company_id`. Something like this:
 
 ```python
 # Materialize unique company names by company_id
@@ -57,7 +57,7 @@ The output will be:
 | 2  | Veggie Shop co  |
 
 
-But if we pay attention to Challenge 5, there is hint indicating the following:
+But if **we pay attention to Challenge 5**, there is hint indicating the following:
 *Hint: Consider the possibility of duplicate companies stored under multiple IDs in the database. Take this into account while devising a solution to this exercise.*
 
 That means that we can have the following scenario:
@@ -69,10 +69,9 @@ That means that we can have the following scenario:
 
 Therefore, we can't trust on either `company_id` and `company_name`. The description of the challenge is not providing any information to resolve this discrepancy.
 
-##### Decicion
-So, I need to take a decision. For me, `company_name` is the one to decide what a company is. In parallel, I'm using the 
-[Levenshtein Distance](https://en.wikipedia.org/wiki/Levenshtein_distance) to normalize `company_name`. I'll use [fuzzywuzzy library](https://pypi.org/project/fuzzywuzzy/) to apply *Levenshtein Distance*.
-It's risky, because sometimes we can make mistakes using Levenshtein Distance, joining two companies which are differents. That because I'm going to write a file called `company_names.csv` specifying the matching between original names and materialization names generated based on Levenshtein Distance, so we can do further investigations about this.
+##### Decision
+So, I need to take a decision. For me, `company_name` is the one to decide what a company is as `company_id` might be duplicated. In parallel, I'm using the [Jaro–Winkler](https://en.wikipedia.org/wiki/Jaro%E2%80%93Winkler_distance) to normalize `company_name`. I'll use [jellyfish library](https://pypi.org/project/jellyfish/) to apply *Jaro–Winkler* algorithm.
+It's risky, because sometimes we can make mistakes using Jaro–Winkler, joining two companies which are different. That because I'm going to write a file called `company_names.csv` specifying the matching between original names and materialization names generated based on Jaro–Winkler, so we will be able to do further investigations about this.
 
 
 ## **Challenges**
@@ -134,7 +133,7 @@ docker run -it my-python-app
 
 ### **4. Run Unit Test and code coverage**
 ```bash
-poetry run pytest --disable-pytest-warnings
+poetry run pytest
 ```
 
 ```bash
@@ -146,6 +145,10 @@ coverage run -m pytest && coverage report -m
 ## Overview
 The menu provides a simple interface to execute various challenges, each focused on a specific data processing task.
 
+<p align="center">
+  <img src=".images/terminal.gif" alt="Execution Example" width="700" height="300">
+</p>
+
 ## Menu Structure
 The menu presents the following options:
 1. **Challenge 1**: Distribution of Crate Type per Company
@@ -153,7 +156,9 @@ The menu presents the following options:
 3. **Challenge 3**: Advanced Metrics Calculation
 4. **Challenge 4**: Aggregation Over Time
 5. **Challenge 5**: Handling Duplicate Companies by ID
-6. **Exit**
+6. Execute all challenges
+7. Print mapping company names
+0. **Exit**
 
 ## How It Works
 1. **Display Menu**: The user is shown a list of challenges.
