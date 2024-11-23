@@ -1,15 +1,14 @@
 import unittest
-from pyspark.sql import SparkSession
 from challenge.challenge_3 import get_orders_with_contact_address
 from pyspark.sql import Row
+from tests.spark_test_case import SparkTestCase
 
-class TestChallenge3(unittest.TestCase):
-    def setUp(self):
-        # Create SparkSession
-        self.spark = SparkSession.builder.master("local").appName("Test").getOrCreate()
-        
+class TestChallenge3(SparkTestCase):
+
+    def test_get_orders_with_contact_address(self):
+
         # Sample orders data
-        self.orders_data = self.spark.createDataFrame(
+        orders_data = self.spark.createDataFrame(
             [
                 ("1", [Row(contact_name="Diego", contact_surname="Leon", city="Chicago", cp="12345")]),
                 ("2", [Row(contact_name="Maria", contact_surname="Lopez", city="Calcutta", cp=None)]),
@@ -20,12 +19,8 @@ class TestChallenge3(unittest.TestCase):
             ["order_id", "contact_array"]
         )
 
-    def tearDown(self):
-        self.spark.stop()
-
-    def test_get_orders_with_contact_address(self):
         # Generate the result
-        result = get_orders_with_contact_address(self.orders_data)
+        result = get_orders_with_contact_address(orders_data)
 
         # Expected output
         expected = self.spark.createDataFrame(

@@ -1,14 +1,13 @@
 import unittest
-from pyspark.sql import SparkSession, Row
+from pyspark.sql import Row
 from challenge.challenge_2 import get_orders_with_full_name
+from tests.spark_test_case import SparkTestCase
 
-class TestChallenge2(unittest.TestCase):
-    def setUp(self):
-        # Create SparkSession
-        self.spark = SparkSession.builder.master("local").appName("Test").getOrCreate()
-        
+class TestChallenge2(SparkTestCase):
+
+    def test_get_orders_with_full_name(self):
         # Sample orders data with contact_array instead of contact_data
-        self.orders_data = self.spark.createDataFrame(
+        orders_data = self.spark.createDataFrame(
             [
                 ("1", [Row(contact_name="Diego", contact_surname="Leon", city="Chicago", cp="12345")]),
                 ("2", [Row(contact_name="Maria", contact_surname="Lopez", city="Calcutta", cp="56789")]),
@@ -19,12 +18,8 @@ class TestChallenge2(unittest.TestCase):
             ["order_id", "contact_array"]
         )
 
-    def tearDown(self):
-        self.spark.stop()
-
-    def test_get_orders_with_full_name(self):
         # Generate the result
-        result = get_orders_with_full_name(self.orders_data)
+        result = get_orders_with_full_name(orders_data)
 
         # Expected output
         expected = self.spark.createDataFrame(

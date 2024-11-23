@@ -12,12 +12,68 @@
   </b>
 </h1>
 
-<br />
-# **Data Engineering Test**
+<h3 align="center">
+  <b>
+    Miguel Ángel Sotomayor Fernández
+  </b>
+</h3>
 
-This repository contains solutions for a set of data engineering challenges. Each challenge is implemented using PySpark, leveraging robust data processing techniques to tackle real-world scenarios.
+<br />
 
 ---
+
+## **Analysis and Assumptions**
+
+Firs assumption: Exercises are name as tests (Test 1, Test 2,...) in the original `README.md`. I'm going to rename these exercises as `Challenges` to avoid a misunderstanding between exercises and unit tests.
+
+The main challenge for this input is `orders.csv` file. This file has a data quality issue for both `company_id` and `company_name` columns.
+My first thought was to identify uniquely a company based on `company_id`. Fixing this is quite easy. Just materializing all differents `company_name` in just one per `company_id`. Something like this:
+
+```python
+# Materialize unique company names by company_id
+# This is because there are multiple names for the same company_id
+# So I'm grouping based on company_id because my assumption is that id is correct
+# And company_name contains typo errors
+materialized_companies = (
+    orders_df.groupBy("company_id")
+    .agg(first("company_name", ignorenulls=True).alias("materialized_company_name"))
+
+# Join materialized names back to the original DataFrame
+normalized_df = orders_df.join(materialized_companies, on="company_id", how="inner")
+```
+
+For instance, having this input:
+| Company ID | Company Name  |
+|---|---|
+| 1  | Veggie Shop  |
+| 2  | Veggie Shop co  |
+| 2  | Veggi S Co  |
+
+The output will be:
+
+| Company ID | Company Name  |
+|---|---|
+| 1  | Veggie Shop  |
+| 2  | Veggie Shop co  |
+
+
+But if we pay attention to Challenge 5, there is hint indicating the following:
+*Hint: Consider the possibility of duplicate companies stored under multiple IDs in the database. Take this into account while devising a solution to this exercise.*
+
+That means that we can have the following scenario:
+| Company ID | Company Name  |
+|---|---|
+| 1  | Veggie Shop  |
+| 2  | Veggie Shop  |
+| 2  | Veggi S Co  |
+
+Therefore, we can't trust on either `company_id` and `company_name`. The description of the challenge is not providing any information to resolve this discrepancy.
+
+##### Decicion
+So, I need to take a decision. For me, `company_name` is the one to decide what a company is. In parallel, I'm using the 
+[Levenshtein Distance](https://en.wikipedia.org/wiki/Levenshtein_distance) to normalize `company_name`. I'll use [fuzzywuzzy library](https://pypi.org/project/fuzzywuzzy/) to apply *Levenshtein Distance*.
+It's risky, because sometimes we can make mistakes using Levenshtein Distance, joining two companies which are differents. That because I'm going to write a file called `company_names.csv` specifying the matching between original names and materialization names generated based on Levenshtein Distance, so we can do further investigations about this.
+
 
 ## **Challenges**
 
@@ -84,3 +140,24 @@ poetry run pytest --disable-pytest-warnings
 ```bash
 coverage run -m pytest && coverage report -m
 ```
+
+# Menu Workflow for Challenges
+
+## Overview
+The menu provides a simple interface to execute various challenges, each focused on a specific data processing task.
+
+## Menu Structure
+The menu presents the following options:
+1. **Challenge 1**: Distribution of Crate Type per Company
+2. **Challenge 2**: Data Deduplication and Normalization
+3. **Challenge 3**: Advanced Metrics Calculation
+4. **Challenge 4**: Aggregation Over Time
+5. **Challenge 5**: Handling Duplicate Companies by ID
+6. **Exit**
+
+## How It Works
+1. **Display Menu**: The user is shown a list of challenges.
+2. **User Input**: The user selects a challenge by entering its corresponding number.
+3. **Route to Function**: The menu calls the appropriate function for the selected challenge.
+4. **Execute Challenge**: The function processes the required data, performs calculations, and displays the results.
+5. **Repeat or Exit**: The user can choose another challenge or exit the program.

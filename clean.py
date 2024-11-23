@@ -5,6 +5,7 @@ from pyspark.sql.functions import udf, col
 from pyspark.sql.types import StringType
 
 threshold: int = 80
+company_names_file = 'company_names.csv'
 
 def clean_column(df: DataFrame, column_name: str) -> DataFrame:
     """
@@ -15,7 +16,7 @@ def clean_column(df: DataFrame, column_name: str) -> DataFrame:
 
     :param df: PySpark DataFrame containing data.
     :param column_name: The name of the column to be cleaned.
-    :return: Dataframe with standardized names.
+    :return: Dataframe with standardized names called `materialization_[column_name]`
     """
 
     # Extract unique elements in DataFrame
@@ -43,6 +44,14 @@ def clean_column(df: DataFrame, column_name: str) -> DataFrame:
     map_udf = udf(lambda name: mapping.get(name, name), StringType())
 
     # Replace the column with the cleaned info
-    cleaned_df = df.withColumn(column_name, map_udf(col(column_name)))
+    new_column = f"materialization_{column_name}"
+    cleaned_df = df.withColumn(new_column, map_udf(col(column_name)))
+
+    # Write the DataFrame to a CSV file, overwriting existing files
+    cleaned_df.select(cleaned_df[column_name].alias("original_company_name"),
+                      cleaned_df[new_column].alias('new_company_name')) \
+                      .orderBy("original_company_name") \
+                      .toPandas() \
+                      .to_csv(company_names_file, index=False)
 
     return cleaned_df

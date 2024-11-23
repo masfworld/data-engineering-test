@@ -4,6 +4,9 @@ from challenge.challenge_2 import challenge_2
 from challenge.challenge_3 import challenge_3
 from challenge.challenge_4 import challenge_4
 from challenge.challenge_5 import challenge_5
+from clean import company_names_file
+import os
+import pandas as pd
 
 logging.getLogger(__name__)
 
@@ -18,6 +21,7 @@ def display_menu():
     print("4. Challenge 4: Calculation of Sales Team Commissions")
     print("5. Challenge 5: DataFrame of Companies with Sales Owners")
     print("6. Execute all challenges")
+    print("7. Print mapping company names")
     print("0. Exit")
     return input("Select an option (0-6): ")
 
@@ -35,13 +39,22 @@ def process_menu_choice(choice, orders_df, invoicing_df):
         elif choice == "4":
             challenge_4(orders_df, invoicing_df)
         elif choice == "5":
-            challenge_5(orders_df, invoicing_df)
+            challenge_5(orders_df)
         elif choice == "6":
             challenge_1(orders_df)
             challenge_2(orders_df)
             challenge_3(orders_df)
             challenge_4(orders_df, invoicing_df)
-            challenge_5(orders_df, invoicing_df)
+            challenge_5(orders_df)
+        elif choice == "7":
+             # Check if the file exists
+            if os.path.exists(company_names_file):
+                # Read the file if it exists
+                data = pd.read_csv(company_names_file)
+                print("Companies Mapping:")
+                print(data)
+            else:
+                print(f"The file '{company_names_file}' does not exist.")
         elif choice == "0":
             logging.info("Exiting application.")
             print("Exiting program. Goodbye!")

@@ -1,42 +1,62 @@
 import unittest
-from pyspark.sql import SparkSession
 from pyspark.sql import Row
 from challenge.challenge_5 import get_companies_with_sales_owners
+from tests.spark_test_case import SparkTestCase
 
-class TestChallenge5(unittest.TestCase):
-    def setUp(self):
-        self.spark = SparkSession.builder.master("local").appName("Test").getOrCreate()
 
-        # Sample orders data
-        self.orders_data = self.spark.createDataFrame([
-            Row(order_id="1", salesowners="Alice, Bob"),
-            Row(order_id="2", salesowners="Bob, Charlie"),
-            Row(order_id="3", salesowners="Alice, Bob, Dave"),
-            Row(order_id="4", salesowners="Eve"),
-            Row(order_id="5", salesowners="Eve, Alice")
-        ])
-
-        # Sample invoices data
-        self.invoices_data = self.spark.createDataFrame([
-            Row(order_id="1", company_id="C1", company_name="Alpha Inc"),
-            Row(order_id="2", company_id="C1", company_name="Alpha Inc"),
-            Row(order_id="3", company_id="C3", company_name="Beta LLC"),
-            Row(order_id="4", company_id="C4", company_name="Gamma Co"),
-            Row(order_id="5", company_id="C4", company_name="Gamma Co")  # Multiple orders for Gamma Co
-        ])
-
-    def tearDown(self):
-        self.spark.stop()
+class TestGetCompaniesWithSalesOwners(SparkTestCase):
 
     def test_get_companies_with_sales_owners(self):
-        result = get_companies_with_sales_owners(self.orders_data, self.invoices_data)
+        # Sample input data
+        data = [
+            Row(company_id="20dfef10-8f4e-45a1-82fc-123f4ab2a4a5", materialization_company_name="Healthy Snacks Co", salesowners="Alice, Bob"),
+            Row(company_id="20dfef10-8f4e-45a1-82fc-123f4ab2a4a5", materialization_company_name="Healthy Snacks Co", salesowners="Alice, Charlie"),
+            Row(company_id="9f4ac15d-3b0c-4c8e-a6d2-45ac78ef12ab", materialization_company_name="Tasty Treats", salesowners="Bob, Dana"),
+            Row(company_id="20dfef10-8f4e-45a1-82fc-123f4ab2a4a5", materialization_company_name="Healthy Snacks Co", salesowners="Alice, Bob")
+        ]
+        input_df = self.spark.createDataFrame(data)
 
-        expected_data = self.spark.createDataFrame([
-            Row(company_id="C1", company_name="Alpha Inc", list_salesowners="Alice, Bob, Charlie"),
-            Row(company_id="C3", company_name="Beta LLC", list_salesowners="Alice, Bob, Dave"),
-            Row(company_id="C4", company_name="Gamma Co", list_salesowners="Alice, Eve")
-        ])
+        # Expected output data
+        expected_data = [
+            Row(company_id="20dfef10-8f4e-45a1-82fc-123f4ab2a4a5",
+                company_name="Healthy Snacks Co",
+                list_salesowners="Alice, Bob, Charlie"),
+            Row(company_id="9f4ac15d-3b0c-4c8e-a6d2-45ac78ef12ab",
+                company_name="Tasty Treats",
+                list_salesowners="Bob, Dana")
+        ]
+        expected_df = self.spark.createDataFrame(expected_data) \
+                        .orderBy("company_id", "company_name", "list_salesowners")
 
-        result_sorted = result.orderBy("company_id").collect()
-        expected_sorted = expected_data.orderBy("company_id").collect()
-        self.assertEqual(result_sorted, expected_sorted)
+        # Run the function
+        result_df = get_companies_with_sales_owners(input_df) \
+                        .orderBy("company_id", "company_name", "list_salesowners")
+
+        # Assert that the result matches the expected output
+        self.assertEqual(result_df.collect(), expected_df.collect())
+
+    def test_test_multiple_company_id(self):
+        # Sample input data
+        data = [
+            Row(company_id="abc", materialization_company_name="Healthy Snacks Co", salesowners="Alice, Bob"),
+            Row(company_id="def", materialization_company_name="Healthy Snacks Co", salesowners="Alice, Charlie")
+        ]
+        input_df = self.spark.createDataFrame(data)
+
+        # Expected output data
+        expected_data = [
+            Row(company_id="def, abc",
+                company_name="Healthy Snacks Co",
+                list_salesowners="Alice, Bob, Charlie"),
+        ]
+        expected_df = self.spark.createDataFrame(expected_data)
+
+        # Run the function
+        result_df = get_companies_with_sales_owners(input_df)
+
+        # Assert that the result matches the expected output
+        self.assertEqual(sorted(result_df.collect()), sorted(expected_df.collect()))
+
+
+if __name__ == '__main__':
+    unittest.main()

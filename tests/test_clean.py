@@ -1,14 +1,12 @@
 import unittest
-from pyspark.sql import SparkSession
 from clean import clean_column
+from tests.spark_test_case import SparkTestCase
 
-class TestCleanCompanyName(unittest.TestCase):
-    def setUp(self):
-        # Create SparkSession
-        self.spark = SparkSession.builder.master("local").appName("TestCleanCompanyName").getOrCreate()
+class TestCleanCompanyName(SparkTestCase):
 
+    def test_clean_company_name(self):
         # Sample DataFrame with company names
-        self.test_data = self.spark.createDataFrame(
+        test_data = self.spark.createDataFrame(
             [
                 ("Fresh Fruits Co", "Plastic"),
                 ("Fresh Fruits c.o", "Metal"),
@@ -18,16 +16,11 @@ class TestCleanCompanyName(unittest.TestCase):
             ["company_name", "crate_type"]
         )
 
-    def tearDown(self):
-        # Stop SparkSession
-        self.spark.stop()
-
-    def test_clean_company_name(self):
         # Apply cleaning function
-        cleaned_df = clean_column(self.test_data, "company_name")
+        cleaned_df = clean_column(test_data, "company_name")
 
         # Count the distinct company names
-        unique_company_count = cleaned_df.select("company_name").distinct().count()
+        unique_company_count = cleaned_df.select("materialization_company_name").distinct().count()
 
         # Assert there are exactly two unique company names
         self.assertEqual(unique_company_count, 2)
