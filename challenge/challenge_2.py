@@ -9,7 +9,7 @@ def get_orders_with_full_name(orders_df: DataFrame) -> DataFrame:
     Create a DataFrame with order_id and contact_full_name.
     If contact name or surname is missing, use "John Doe" as a placeholder.
 
-    Assumption: A full name withouth either first name or last name is not valid
+    Assumption: A full name without either first name or last name is not valid
 
     :param orders_df: PySpark DataFrame containing orders data.
     :return: PySpark DataFrame with columns order_id and contact_full_name.

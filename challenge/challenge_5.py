@@ -42,5 +42,5 @@ def get_companies_with_sales_owners(orders_df: DataFrame) -> DataFrame:
 
 def challenge_5(orders_df: DataFrame):
     logging.info("Running Challenge 5: DataFrame of Companies with Sales Owners and Concatenated Company IDs")
-    result_df = get_companies_with_sales_owners(orders_df)
-    result_df.show(truncate=False)
+    df_3 = get_companies_with_sales_owners(orders_df)
+    df_3.show(truncate=False)

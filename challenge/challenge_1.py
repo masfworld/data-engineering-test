@@ -8,8 +8,8 @@ def calculate_crate_distribution(orders_df: DataFrame) -> DataFrame:
     """
     Calculate the distribution of crate types per company.
 
-    Look at `Analysis and Assumptions` in README to get more details about 
-    why I'm using company_name instead of company_id
+    Look at `Analysis and Assumptions` section in README to get more details about 
+    why I'm using `company_name` instead of `company_id`
     
     :param orders_df: PySpark DataFrame containing orders data.
     :return: PySpark DataFrame with company_name, crate_type, and counts.
