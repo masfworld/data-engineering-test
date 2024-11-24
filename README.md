@@ -106,7 +106,7 @@ It's risky, because sometimes we can make mistakes using Jaro–Winkler, joining
 ## **Requirements**
 
 - Python 3.11
-- Java 11|17. Required by PySpark. Using Windows will requier additional [requirements](https://medium.com/codex/pyspark-setup-on-windows-and-run-your-first-pyspark-program-7ce7c2833338). For that reason, the recommendation is using [Docker](#3-execute-challenges-using-docker)
+- Java 11|17. Required by PySpark. Using Windows will requier additional [requirements](https://medium.com/analytics-vidhya/installing-and-using-pyspark-on-windows-machine-59c2d64af76e). For that reason, the recommendation is using [Docker](#3-execute-challenges-using-docker)
 - [Poetry](https://python-poetry.org/) for dependency management. Look at [this section](#1-install-dependencies-locally) to install poetry locally.
 - Docker (optional, for containerized execution)
 
@@ -128,8 +128,8 @@ poetry run python main.py
 
 ### **3. Execute Challenges using Docker**
 ```bash
-docker build -t my-python-app 
-docker run -it my-python-app
+docker build -t ifco-miguel-challenge .
+docker run -it ifco-miguel-challenge
 ```
 
 ### **4. Run Unit Test and code coverage**
