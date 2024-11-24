@@ -12,90 +12,158 @@
   </b>
 </h1>
 
+<h3 align="center">
+  <b>
+    Miguel Ángel Sotomayor Fernández
+  </b>
+</h3>
+
 <br />
 
+---
 
-## Problem Statement
+## **Analysis and Assumptions**
 
-You have been assigned the responsibility of assisting IFCO's Data Team in the analysis of some business data. For this purpose, you have been provided with two files:
+Firs assumption: Exercises are named as tests (Test 1, Test 2,...) in the original `README.md`. I'm going to rename these exercises as `Challenges` to avoid a misunderstanding between exercises and unit tests.
 
-* [orders.csv](resources/orders.csv) (which contains factual information regarding the orders received)
-* [invoicing_data.json](resources/invoicing_data.json) (which contains invoicing information)
+The main challenge is `orders.csv` file. This file has a data quality issue for both `company_id` and `company_name` columns.
+My first thought was to identify uniquely a company based on `company_id`. That was pretty easy, just materializing all differents `company_name` in just one per `company_id`. Something like this:
 
-Explore the raw data and provide the code (well-commented) to answer the following questions/scenarios. For this exercise, you can only use Python (or PySpark). **Unit testing is essential** for ensuring the reliability and correctness of your code. Please include appropriate unit tests for each task.
+```python
+# Materialize unique company names by company_id
+# This is because there are multiple names for the same company_id
+# So I'm grouping based on company_id because my assumption is that id is correct
+# And company_name contains typo errors
+materialized_companies = (
+    orders_df.groupBy("company_id")
+    .agg(first("company_name", ignorenulls=True).alias("materialized_company_name"))
 
-### Test 1: Distribution of Crate Type per Company
+# Join materialized names back to the original DataFrame
+normalized_df = orders_df.join(materialized_companies, on="company_id", how="inner")
+```
 
-Calculate the distribution of crate types per company (number of orders per type). **Ensure to include unit tests** to validate the correctness of your calculations.
+For instance, having this input:
+| Company ID | Company Name  |
+|---|---|
+| 1  | Veggie Shop  |
+| 2  | Veggie Shop co  |
+| 2  | Veggi S Co  |
 
-### Test 2: DataFrame of Orders with Full Name of the Contact
+The output will be:
 
-Provide a DataFrame (`df_1`) containing the following columns:
+| Company ID | Company Name  |
+|---|---|
+| 1  | Veggie Shop  |
+| 2  | Veggie Shop co  |
 
-| Column            | Description                                                                                                                                                                |
-|-------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| order_id          | The `order_id` field must contain the unique identifier of the order.                                                                                                       |
-| contact_full_name | The `contact_full_name` field must contain the full name of the contact. In case this information is not available, the placeholder "John Doe" should be utilized. |
 
-**Include unit tests** to verify that the full names are correctly extracted and the placeholder is used appropriately.
+But if **we pay attention to Challenge 5**, there is hint indicating the following:
+*Hint: Consider the possibility of duplicate companies stored under multiple IDs in the database. Take this into account while devising a solution to this exercise.*
 
-### Test 3: DataFrame of Orders with Contact Address
+That means that we can have the following scenario:
+| Company ID | Company Name  |
+|---|---|
+| 1  | Veggie Shop  |
+| 2  | Veggie Shop  |
+| 2  | Veggi S Co  |
 
-Provide a DataFrame (`df_2`) containing the following columns:
+Therefore, we can't trust on either `company_id` and `company_name`. The description of the challenge is not providing any information to resolve this discrepancy.
 
-| Column          | Description                                                                                                                                                                                                                                                                                    |
-|-----------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| order_id        | The `order_id` field must contain the unique identifier of the order.                                                                                                                                                                                                                            |
-| contact_address | The field for `contact_address` should adhere to the following information and format: "city name, postal code". In the event that the city name is not available, the placeholder "Unknown" should be used. Similarly, if the postal code is not known, the placeholder "UNK00" should be used. |
+##### Decision
+I need to make a decision. For me, `company_name` will determine what a company is, as `company_id` might be duplicated. However, `company_name` contains multiple inconsistencies, where the same company can be shown under different names. To address this, I decided to use one of the many [string-similarity](https://yassineelkhal.medium.com/the-complete-guide-to-string-similarity-algorithms-1290ad07c6b7) algorithms. Specifically, I will use the [Jaro–Winkler](https://en.wikipedia.org/wiki/Jaro%E2%80%93Winkler_distance) algorithm to normalize `company_name`, leveraging the [jellyfish library](https://pypi.org/project/jellyfish/) to apply the *Jaro–Winkler* method.
 
-**Ensure to include unit tests** to validate the address formatting and placeholder logic.
+This approach is risky, as algorithms like Jaro–Winkler can sometimes make mistakes, such as merging two different companies into one. To mitigate this, I will create a file called `company_names.csv`, which will store the original names alongside the normalized names generated by Jaro–Winkler. This will allow for further investigation if needed.
 
-### Test 4: Calculation of Sales Team Commissions
+## **Challenges**
 
-The Sales Team requires your assistance in computing the commissions. It is possible for multiple salespersons to be associated with a single order, as they may have participated in different stages of the order. The `salesowners` field comprises a ranked list of the salespeople who have ownership of the order. The first individual on the list represents the primary owner, while the subsequent individuals, if any, are considered co-owners who have contributed to the acquisition process. The calculation of commissions follows a specific procedure:
+### 1. **Distribution of Crate Type per Company**
+   - Analyze the distribution of crate types used by companies for their orders.
+   - **Output**: A DataFrame showing the count of each crate type per company.
 
-- Main Owner: 6% of the net invoiced value.
-- Co-owner 1 (second in the list): 2.5% of the net invoiced value.
-- Co-owner 2 (third in the list): 0.95% of the net invoiced value.
-- The rest of the co-owners do not receive anything.
+### 2. **DataFrame of Orders with Full Name of the Contact**
+   - Extract the full name of the contact from the `contact_data` column, applying placeholders (`John Doe`) for missing names.
+   - **Output**: A DataFrame containing `order_id` and `contact_full_name`.
 
-Provide a list of the distinct sales owners and their respective commission earnings. The list should be sorted in order of descending performance, with the sales owners who have generated the highest commissions appearing first.
+### 3. **DataFrame of Orders with Contact Address**
+   - Extract the address from the `contact_data` field in the format `city name, postal code`. If any information is missing, use placeholders (`Unknown`, `UNK00`).
+   - **Output**: A DataFrame containing `order_id` and `contact_address`.
 
-**Hint:** Raw amounts are represented in cents. Please provide euro amounts with two decimal places in the results.
+### 4. **Calculation of Sales Team Commissions**
+   - Compute commissions for sales owners based on their participation in orders, using a tiered system:
+     - **Main Owner**: 6% of net invoiced value.
+     - **Co-owner 1**: 2.5%.
+     - **Co-owner 2**: 0.95%.
+   - Aggregate total commissions per salesperson.
+   - **Output**: A sorted DataFrame of sales owners and their total commissions.
 
-**Include unit tests** to verify the correctness of the commission calculations and sorting order.
+### 5. **DataFrame of Companies with Sales Owners**
+   - Generate a DataFrame containing a unique, comma-separated, and alphabetically sorted list of sales owners associated with each company.
+   - Handle potential duplicate company IDs.
+   - **Output**: A DataFrame containing `company_id`, `company_name`, and `list_salesowners`.
 
-### Test 5: DataFrame of Companies with Sales Owners
+---
 
-Provide a DataFrame (`df_3`) containing the following columns:
+## **Requirements**
 
-| Column           | Description                                                                                                                                                                                                                                       |
-|------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| company_id       | The `company_id` field must contain the unique identifier of the company.                                                                                                                                                                         |
-| company_name     | The `company_name` field must contain the name of the company.                                                                                                                                                                                    |
-| list_salesowners | The `list_salesowners` field should contain a unique and comma-separated list of salespeople who have participated in at least one order of the company. Please ensure that the list is sorted in ascending alphabetical order of the first name. |
+- Python 3.11
+- Java 11|17. Required by PySpark. Using Windows will requier additional [requirements](https://medium.com/analytics-vidhya/installing-and-using-pyspark-on-windows-machine-59c2d64af76e). For that reason, the recommendation is using [Docker](#3-execute-challenges-using-docker)
+- [Poetry](https://python-poetry.org/) for dependency management. Look at [this section](#1-install-dependencies-locally) to install poetry locally.
+- Docker (optional, for containerized execution)
 
-**Hint:** Consider the possibility of duplicate companies stored under multiple IDs in the database. Take this into account while devising a solution to this exercise.
+---
 
-**Ensure to include unit tests** to validate the uniqueness and sorting of the sales owners list, and the handling of duplicate companies.
+## **Setup**
 
-### Test 6: Data Visualization (you don't need to submit a solution to this test if not explicitly asked for)
+### **1. Install Dependencies Locally**
+```bash
+pip install poetry
+poetry install
+```
 
-The Sales team wants to understand which sales owners are particularly successful in creating orders in plastic crates. Create a set of appropriate visualizations / reports that help your stakeholders to understand the following aspects better:
+### **2. Execute Challenges Locally**
+```bash
+poetry shell
+poetry run python main.py
+```
 
-- What is the distribtion of orders by crate type.
-- Which sales owners need most training to improve selling on plastic crates, based on the last 12 months orders.
-- Understand who are by month the top 5 performers selling plastic crates for a rolling 3 months evaluation window.
+### **3. Execute Challenges using Docker**
+```bash
+docker build -t ifco-miguel-challenge .
+docker run -it ifco-miguel-challenge
+```
 
-You can use Python or Power BI for this test.
+### **4. Run Unit Test and code coverage**
+```bash
+poetry run pytest
+```
 
-## Additional Instructions
+```bash
+coverage run -m pytest && coverage report -m
+```
 
-1. **Deliverables**: Ensure your code is well-commented and structured. Provide a complete execution environment as a deliverable. This should include:
-   - All the source code and scripts necessary to reproduce the results.
-   - Clear instructions for setting up and running the environment, including any necessary configurations.
-   - A Dockerfile, if applicable, for containerized execution.
-   - A link to a Git repository containing all the above elements and ensure that access is granted to @theUniC, @carlosbuenosvinos and @ahue.
-2. **Evaluation**: Your solution will be evaluated based on accuracy, efficiency, code clarity, the comprehensiveness of your unit tests, and the completeness of the provided execution environment.
+# Menu Workflow for Challenges
 
-Good luck!
+## Overview
+The menu provides a simple interface to execute various challenges, each focused on a specific data processing task.
+
+<p align="center">
+  <img src=".images/terminal.gif" alt="Execution Example" width="700" height="300">
+</p>
+
+## Menu Structure
+The menu presents the following options:
+1. **Challenge 1**: Distribution of Crate Type per Company
+2. **Challenge 2**: Data Deduplication and Normalization
+3. **Challenge 3**: Advanced Metrics Calculation
+4. **Challenge 4**: Aggregation Over Time
+5. **Challenge 5**: Handling Duplicate Companies by ID
+6. Execute all challenges
+7. Print mapping company names
+0. **Exit**
+
+## How It Works
+1. **Display Menu**: The user is shown a list of challenges.
+2. **User Input**: The user selects a challenge by entering its corresponding number.
+3. **Route to Function**: The menu calls the appropriate function for the selected challenge.
+4. **Execute Challenge**: The function processes the required data, performs calculations, and displays the results.
+5. **Repeat or Exit**: The user can choose another challenge or exit the program.

@@ -1,0 +1,19 @@
+# Ignore virtual environments
+.venv/
+
+# Ignore Pytest cache
+.pytest_cache/
+__pycache__
+.coverage
+
+# Ignore IDE and editor files
+.vscode/
+.idea/
+*.swp
+
+# Logs
+app.log
+
+#Other
+.~lock.*
+company_names.csv
